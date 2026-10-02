@@ -1,0 +1,52 @@
+name: Build macOS app
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    env:
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build universal app (Apple Silicon + Intel)
+        run: UNIVERSAL=1 ./build.sh
+
+      - name: Smoke test
+        run: |
+          lipo -info dist/Sweepy.app/Contents/MacOS/Sweepy
+          SWEEPY_CONFIG_DIR="$RUNNER_TEMP/cfg" dist/Sweepy.app/Contents/MacOS/Sweepy --check-path ~/Documents
+
+      - name: Sign with Developer ID & notarize
+        if: env.MACOS_CERT_P12 != ''
+        run: ./scripts/sign-and-notarize.sh
+
+      - name: Package
+        run: ditto -c -k --keepParent dist/Sweepy.app dist/Sweepy.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sweepy
+          path: dist/Sweepy.zip
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            && gh release upload "$GITHUB_REF_NAME" dist/Sweepy.zip --clobber \
+            || gh release create "$GITHUB_REF_NAME" dist/Sweepy.zip --title "Sweepy $GITHUB_REF_NAME" --generate-notes
