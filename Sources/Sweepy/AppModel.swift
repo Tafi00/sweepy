@@ -43,6 +43,7 @@ final class AppModel: ObservableObject {
         selected = Set(config.effectiveRules().filter(\.autoClean).map(\.id))
         AppModel.shared = self
         updater.start(enabled: config.autoUpdate)
+        Scheduler.repairIfMoved(config.schedule)
         // Quitting Xcode/Chrome should unlock its rules without a full rescan.
         let center = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {

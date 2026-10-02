@@ -84,6 +84,19 @@ enum Scheduler {
         return "Sweepy đang chạy từ \(PathUtil.abbreviate(bundle)). Hãy chuyển app vào thư mục Applications trước khi bật lịch, nếu không lịch sẽ hỏng khi bạn di chuyển hoặc xoá thư mục này."
     }
 
+    /// The app path the installed LaunchAgent runs, if any.
+    static var installedExecutable: String? {
+        guard let dict = NSDictionary(contentsOf: plistURL), let args = dict["ProgramArguments"] as? [String] else { return nil }
+        return args.first
+    }
+
+    /// The app was moved (or reinstalled elsewhere): point the schedule at this copy.
+    static func repairIfMoved(_ schedule: Schedule) {
+        guard schedule.frequency != .off, isInstalled, Bundle.main.bundlePath.hasSuffix(".app"),
+              let installed = installedExecutable, installed != executablePath else { return }
+        apply(schedule)
+    }
+
     static func plist(for schedule: Schedule) -> [String: Any] {
         var interval: [String: Int] = ["Hour": schedule.hour, "Minute": schedule.minute]
         switch schedule.frequency {
