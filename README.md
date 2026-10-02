@@ -60,6 +60,7 @@ vì LaunchAgent lưu đường dẫn tuyệt đối tới app.
     chuột phải → "Luôn bỏ qua đường dẫn này".
 - **Cài đặt & lịch**: hằng ngày/tuần/tháng, chỉ chạy khi ổ trống dưới X GB, thư mục dự án, danh sách loại trừ.
 - **Menu bar** (biểu tượng ✨): xem dung lượng, "Dọn các mục tự động ngay".
+- **Khởi động cùng macOS**: bật trong *Cài đặt & lịch → Khởi động*; khi tự mở lúc đăng nhập, app chỉ nằm trên menu bar.
 
 ## Dòng lệnh
 

@@ -277,12 +277,17 @@ struct AppConfig: Codable {
     /// Auto runs only clean when free space is below this many GB. 0 = always.
     var minFreeGB: Int = 0
     var notify: Bool = true
+    /// When macOS opens Sweepy at login, stay in the menu bar instead of showing the window.
+    var hideWindowAtLogin: Bool = true
     var overrides: [String: RuleOverride] = [:]
     var customRules: [Rule] = []
 
     static func defaultProjectRoots() -> [String] {
         let fm = FileManager.default
-        let skip: Set<String> = ["Library", "Applications", "Music", "Movies", "Pictures", "Public", "Sites"]
+        // SDK/toolchain folders hold packages too, but are not projects to clean.
+        let skip: Set<String> = ["Library", "Applications", "Music", "Movies", "Pictures", "Public", "Sites",
+                                 "fvm", "flutter", "go", "sdk", "Android", "android-sdk", "anaconda3", "miniconda3",
+                                 "miniforge3", "opt", "bin"]
         var roots = ["~/Desktop", "~/Documents", "~/Downloads", "~/Developer", "~/Projects", "~/Code", "~/dev"]
         // Also any top-level home folder that holds code (a git repo or package within two levels).
         let markers = [".git", "package.json", "pubspec.yaml", "Package.swift", "build.gradle", "Cargo.toml", "pyproject.toml"]
@@ -321,6 +326,7 @@ extension AppConfig {
         schedule = try c.decodeIfPresent(Schedule.self, forKey: .schedule) ?? Schedule()
         minFreeGB = try c.decodeIfPresent(Int.self, forKey: .minFreeGB) ?? 0
         notify = try c.decodeIfPresent(Bool.self, forKey: .notify) ?? true
+        hideWindowAtLogin = try c.decodeIfPresent(Bool.self, forKey: .hideWindowAtLogin) ?? true
         overrides = try c.decodeIfPresent([String: RuleOverride].self, forKey: .overrides) ?? [:]
         customRules = try c.decodeIfPresent([Rule].self, forKey: .customRules) ?? []
     }

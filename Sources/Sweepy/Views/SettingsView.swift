@@ -71,6 +71,24 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle("Mở Sweepy khi đăng nhập macOS", isOn: Binding(
+                    get: { model.launchAtLogin },
+                    set: { model.setLaunchAtLogin($0) }
+                ))
+                Toggle("Khi tự mở lúc đăng nhập, chỉ hiện trên menu bar", isOn: $model.config.hideWindowAtLogin)
+                    .disabled(!model.launchAtLogin)
+                    .onChange(of: model.config.hideWindowAtLogin) { model.save() }
+                if let message = model.loginItemMessage {
+                    Text(message).font(.callout).foregroundStyle(.orange)
+                }
+            } header: {
+                Text("Khởi động")
+            } footer: {
+                Text("Sweepy sẽ nằm trên menu bar (biểu tượng ✨) để bạn xem dung lượng trống và dọn nhanh. Lịch dọn tự động vẫn chạy kể cả khi tắt tuỳ chọn này.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Section {
                 ForEach(model.config.projectRoots, id: \.self) { root in
                     HStack {
                         Image(systemName: "folder")
@@ -141,6 +159,7 @@ struct SettingsView: View {
         .navigationTitle("Cài đặt & lịch")
         .onAppear {
             if !loaded { draft = model.config.schedule; loaded = true }
+            model.launchAtLogin = LoginItem.isEnabled
         }
     }
 

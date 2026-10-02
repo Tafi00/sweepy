@@ -20,6 +20,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             UNUserNotificationCenter.current().delegate = self
             Notifier.requestAuthorization()
         }
+        // Opened at login: stay quietly in the menu bar.
+        let atLogin = LoginItem.launchedAtLogin
+        if atLogin && Store.loadConfig().hideWindowAtLogin && LoginItem.isEnabled {
+            DispatchQueue.main.async {
+                for window in NSApp.windows where !(window is NSPanel) { window.close() }
+            }
+        }
         if let dir = ProcessInfo.processInfo.environment["SWEEPY_SNAPSHOT_DIR"] {
             Snapshotter.run(into: dir)
         }

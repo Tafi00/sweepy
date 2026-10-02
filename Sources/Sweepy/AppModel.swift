@@ -30,6 +30,8 @@ final class AppModel: ObservableObject {
     @Published var pendingClean: [String]?
     @Published var lastResult: HistoryEntry?
     @Published var scheduleError: String?
+    @Published var launchAtLogin = LoginItem.isEnabled
+    @Published var loginItemMessage: String?
 
     static weak var shared: AppModel?
 
@@ -251,6 +253,11 @@ final class AppModel: ObservableObject {
     }
 
     func save() { Store.save(config) }
+
+    func setLaunchAtLogin(_ on: Bool) {
+        loginItemMessage = LoginItem.set(on)
+        launchAtLogin = LoginItem.isEnabled
+    }
 
     // MARK: Finder helpers
 
