@@ -299,6 +299,8 @@ struct AppConfig: Codable {
     var hideWindowAtLogin: Bool = true
     /// Check GitHub for new versions and install them.
     var autoUpdate: Bool = true
+    /// Closing the window or ⌘Q keeps Sweepy in the menu bar; only "Thoát Sweepy" really quits.
+    var keepInMenuBar: Bool = true
     var overrides: [String: RuleOverride] = [:]
     var customRules: [Rule] = []
 
@@ -348,6 +350,7 @@ extension AppConfig {
         notify = try c.decodeIfPresent(Bool.self, forKey: .notify) ?? true
         hideWindowAtLogin = try c.decodeIfPresent(Bool.self, forKey: .hideWindowAtLogin) ?? true
         autoUpdate = try c.decodeIfPresent(Bool.self, forKey: .autoUpdate) ?? true
+        keepInMenuBar = try c.decodeIfPresent(Bool.self, forKey: .keepInMenuBar) ?? true
         overrides = try c.decodeIfPresent([String: RuleOverride].self, forKey: .overrides) ?? [:]
         customRules = try c.decodeIfPresent([Rule].self, forKey: .customRules) ?? []
     }

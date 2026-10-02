@@ -84,6 +84,8 @@ struct SettingsView: View {
                     get: { model.launchAtLogin },
                     set: { model.setLaunchAtLogin($0) }
                 ))
+                Toggle("Đóng cửa sổ hoặc ⌘Q vẫn chạy ngầm trên menu bar", isOn: $model.config.keepInMenuBar)
+                    .onChange(of: model.config.keepInMenuBar) { model.save() }
                 Toggle("Khi tự mở lúc đăng nhập, chỉ hiện trên menu bar", isOn: $model.config.hideWindowAtLogin)
                     .disabled(!model.launchAtLogin)
                     .onChange(of: model.config.hideWindowAtLogin) { model.save() }
@@ -251,12 +253,12 @@ struct MenuBarView: View {
             Button { model.scan() } label: { Label("Quét lại", systemImage: "arrow.clockwise") }
                 .disabled(model.busy)
             Button {
-                openWindow(id: "main")
-                NSApp.activate(ignoringOtherApps: true)
+                AppDelegate.openMainWindow = { [openWindow] in openWindow(id: "main") }
+                AppDelegate.showMainWindow()
             } label: { Label("Mở Sweepy", systemImage: "macwindow") }
             UpdateReadyButton(updater: model.updater)
             Divider()
-            Button("Thoát Sweepy") { NSApp.terminate(nil) }
+            Button("Thoát hẳn Sweepy") { AppDelegate.quit() }
         }
         .buttonStyle(.plain)
         .padding(14)

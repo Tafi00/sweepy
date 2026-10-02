@@ -28,6 +28,9 @@ xattr -dr com.apple.quarantine /Applications/Sweepy.app
 Developer ID (team `3JD7L6FN23`). Khi app chỉ nằm trên menu bar, bản mới được cài ngay; khi cửa sổ đang mở,
 nút *Cập nhật* hiện trên thanh công cụ. Tắt ở *Cài đặt → Cập nhật*.
 
+**Chạy ngầm:** đóng cửa sổ hoặc ⌘Q chỉ ẩn Sweepy khỏi Dock, app vẫn nằm trên menu bar (✨) để dọn theo lịch và
+tự cập nhật. Thoát hẳn bằng *✨ → Thoát hẳn Sweepy*; tắt hành vi này ở *Cài đặt → Khởi động*.
+
 ### Ký & notarize (cho người duy trì repo)
 
 Workflow tự ký Developer ID và notarize khi repo có các secret sau, nhờ đó bản zip tải bằng trình duyệt mở được ngay.

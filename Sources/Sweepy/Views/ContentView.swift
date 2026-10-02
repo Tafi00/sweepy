@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var model: AppModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         NavigationSplitView {
@@ -84,6 +85,10 @@ struct ContentView: View {
         }
         .task {
             if model.scans.isEmpty { model.scan() }
+        }
+        .onAppear {
+            AppDelegate.openMainWindow = { [openWindow] in openWindow(id: "main") }
+            NSApp.setActivationPolicy(.regular)
         }
     }
 

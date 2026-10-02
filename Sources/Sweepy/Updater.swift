@@ -90,7 +90,7 @@ final class Updater: ObservableObject {
             staged = try await Task.detached(priority: .utility) { try Updater.fetchAndVerify(release) }.value
             state = .ready(version: release.version)
             // Nobody is looking (menu bar only): update right away and come back hidden.
-            if let model = AppModel.shared, !model.busy, !NSApp.windows.contains(where: { $0.isVisible && !($0 is NSPanel) }) {
+            if let model = AppModel.shared, !model.busy, !AppDelegate.hasVisibleMainWindow {
                 installAndRelaunch(background: true)
                 return
             }
@@ -127,7 +127,7 @@ final class Updater: ObservableObject {
             state = .failed(error.localizedDescription)
             return
         }
-        NSApp.terminate(nil)
+        AppDelegate.quit()
     }
 
     // MARK: Network & verification (off the main actor)
