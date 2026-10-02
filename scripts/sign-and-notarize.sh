@@ -22,7 +22,26 @@ codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
 codesign --verify --strict --verbose=2 "$APP"
 
 ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/notarize.zip"
-xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
-  --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+AUTH=(--apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD")
+SUBMISSION=$(xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" "${AUTH[@]}" --output-format json \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+echo "Notary submission: $SUBMISSION"
+
+# Apple can take a long time (especially the first submissions of a new team) and the runner's
+# connection sometimes drops while polling, so keep waiting on the same submission instead of failing.
+STATUS=""
+for attempt in $(seq 1 12); do
+  xcrun notarytool wait "$SUBMISSION" "${AUTH[@]}" --timeout 20m || true
+  STATUS=$(xcrun notarytool info "$SUBMISSION" "${AUTH[@]}" --output-format json 2>/dev/null \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status",""))' || true)
+  echo "Lần $attempt: $STATUS"
+  [ "$STATUS" = "In Progress" ] || [ -z "$STATUS" ] || break
+  sleep 30
+done
+if [ "$STATUS" != "Accepted" ]; then
+  xcrun notarytool log "$SUBMISSION" "${AUTH[@]}" || true
+  echo "Notarize không thành công: ${STATUS:-không rõ}"
+  exit 1
+fi
 xcrun stapler staple "$APP"
 spctl --assess --type execute --verbose "$APP"
