@@ -26,7 +26,9 @@ xattr -dr com.apple.quarantine /Applications/Sweepy.app
 
 ### Ký & notarize (cho người duy trì repo)
 
-Workflow tự ký Developer ID và notarize khi repo có các secret sau, nhờ đó bản zip tải bằng trình duyệt mở được ngay:
+Workflow tự ký Developer ID và notarize khi repo có các secret sau, nhờ đó bản zip tải bằng trình duyệt mở được ngay.
+Cách nhanh nhất: xuất chứng chỉ ra .p12 rồi chạy `./scripts/setup-signing.sh đường-dẫn.p12` – script hỏi mật khẩu,
+kiểm tra với Apple rồi tự lưu cả 5 secret.
 
 | Secret | Nội dung |
 |---|---|
