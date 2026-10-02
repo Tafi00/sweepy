@@ -33,7 +33,7 @@ cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 IDENTITY=${SIGN_IDENTITY:-}
 if [ -z "$IDENTITY" ]; then
   for kind in "Developer ID Application" "Apple Development"; do
-    IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "\"$kind" | head -1 | awk -F'"' '{print $2}')
+    IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "\"$kind" | head -1 | awk -F'"' '{print $2}' || true)
     [ -n "$IDENTITY" ] && break
   done
 fi

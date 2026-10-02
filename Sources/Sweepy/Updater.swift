@@ -175,7 +175,7 @@ final class Updater: ObservableObject {
             guard (response as? HTTPURLResponse)?.statusCode == 200, let url else {
                 failure = UpdateError(message: "Tải bản cập nhật thất bại"); return
             }
-            do { try fm.moveItem(at: url, to: zip) } catch { failure = error }
+            do { try FileManager.default.moveItem(at: url, to: zip) } catch { failure = error }
         }.resume()
         semaphore.wait()
         if let failure { throw failure }
