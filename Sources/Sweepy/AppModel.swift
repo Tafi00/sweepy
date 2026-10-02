@@ -129,6 +129,62 @@ final class AppModel: ObservableObject {
         Set(selected.compactMap { id in size(of: id) > 0 ? scans[id]?.blockedBy : nil }).sorted()
     }
 
+    /// Everything found that is neither cleanable now nor waiting on an app, so the three parts add up to `totalFound`.
+    var unselectedTotal: Int64 { max(0, totalFound - selectedTotal - waitingTotal) }
+
+    // MARK: Quitting apps that hold files open
+
+    /// Apps never quit on the user's behalf: Sweepy itself, and Finder (relaunches, owns the desktop).
+    static let neverQuit: Set<String> = ["local.sweepy.app", "com.apple.finder"]
+
+    /// Running GUI apps that keep the given rules from being cleaned.
+    func blockingApps(_ ids: [String]) -> [NSRunningApplication] {
+        let wanted = Set(rules.filter { ids.contains($0.id) && isBlocked($0.id) && size(of: $0.id) > 0 }
+            .flatMap(\.skipIfRunning).filter { $0.contains(".") })
+        return NSWorkspace.shared.runningApplications.filter { app in
+            guard let id = app.bundleIdentifier else { return false }
+            return wanted.contains(id) && !AppModel.neverQuit.contains(id)
+        }
+    }
+
+    /// Blocked rules held back only by command-line processes, which Sweepy does not kill.
+    func blockedByProcesses(_ ids: [String]) -> [String] {
+        let apps = Set(blockingApps(ids).compactMap(\.localizedName))
+        return Set(ids.compactMap { scans[$0]?.blockedBy }).subtracting(apps).sorted()
+    }
+
+    /// Rule IDs waiting for the user to confirm quitting their apps.
+    @Published var quitRequest: [String]?
+    @Published var lastError: String?
+
+    /// Asks the blocking apps to quit normally (they may prompt to save), then cleans the rules.
+    func quitAppsAndClean(_ ids: [String]) {
+        guard !busy else { return }
+        let apps = blockingApps(ids)
+        let names = apps.compactMap(\.localizedName).joined(separator: ", ")
+        apps.forEach { $0.terminate() }
+        isCleaning = true
+        status = "Đang chờ \(names) thoát…"
+        let rules = self.rules.filter { ids.contains($0.id) }
+        Task {
+            for _ in 0..<40 where !apps.allSatisfy(\.isTerminated) {
+                try? await Task.sleep(for: .milliseconds(500))
+            }
+            // Re-read what is still running before deciding what can go.
+            let processes = await Task.detached { ProcessSnapshot.capture(includeProjectInfo: false) }.value
+            for rule in rules where rule.onlyWhenAppClosed {
+                self.scans[rule.id]?.blockedBy = processes.runningName(among: rule.skipIfRunning)
+            }
+            self.isCleaning = false
+            let still = apps.filter { !$0.isTerminated }.compactMap(\.localizedName)
+            if !still.isEmpty {
+                self.status = ""
+                self.lastError = "\(still.joined(separator: ", ")) chưa thoát (có thể đang chờ bạn lưu dữ liệu). Các mục của app đó được giữ lại."
+            }
+            self.clean(ids)
+        }
+    }
+
     var lastAutoRun: HistoryEntry? { history.last { $0.trigger == .auto } }
 
     // MARK: Scan & clean

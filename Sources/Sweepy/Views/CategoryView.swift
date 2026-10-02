@@ -71,9 +71,16 @@ struct RuleCard: View {
                     Text(rule.detail).font(.callout).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     if let blocked = scan?.blockedBy {
-                        Label("\(blocked) đang chạy – sẽ bỏ qua khi dọn. Đóng app hoặc tắt \"Chỉ dọn khi app đã đóng\".",
-                              systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption).foregroundStyle(.orange)
+                        HStack(spacing: 8) {
+                            Label("\(blocked) đang mở – mục này bị bỏ qua khi dọn.", systemImage: "lock.fill")
+                                .font(.caption).foregroundStyle(.orange)
+                            if !model.blockingApps([rule.id]).isEmpty {
+                                Button("Thoát \(blocked) & dọn") { model.quitRequest = [rule.id] }
+                                    .controlSize(.mini).disabled(model.busy)
+                            } else {
+                                Text("(tiến trình dòng lệnh – hãy tự tắt)").font(.caption2).foregroundStyle(.secondary)
+                            }
+                        }
                     }
                     ForEach(scan?.notes ?? [], id: \.self) { note in
                         Text(note).font(.caption).foregroundStyle(.secondary)

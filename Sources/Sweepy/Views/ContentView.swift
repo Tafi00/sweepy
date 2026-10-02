@@ -62,6 +62,23 @@ struct ContentView: View {
         .sheet(item: Binding(get: { model.pendingClean.map(PendingClean.init) }, set: { model.pendingClean = $0?.ids })) { pending in
             ConfirmCleanSheet(ids: pending.ids)
         }
+        .alert("Thoát app để dọn?", isPresented: Binding(get: { model.quitRequest != nil }, set: { if !$0 { model.quitRequest = nil } })) {
+            Button("Thoát & dọn", role: .destructive) {
+                if let ids = model.quitRequest { model.quitAppsAndClean(ids) }
+                model.quitRequest = nil
+            }
+            Button("Huỷ", role: .cancel) { model.quitRequest = nil }
+        } message: {
+            let ids = model.quitRequest ?? []
+            let names = model.blockingApps(ids).compactMap(\.localizedName)
+            let claude = model.blockingApps(ids).contains { $0.bundleIdentifier == "com.anthropic.claudefordesktop" }
+            Text("Sweepy sẽ yêu cầu \(names.joined(separator: ", ")) thoát như khi bạn bấm ⌘Q (app có thể hỏi lưu dữ liệu), rồi dọn \(Fmt.bytes(model.uniqueItems(ids, respectUnticked: true).reduce(0) { $0 + $1.item.size })).\(claude ? "\n\nLưu ý: Claude sẽ bị đóng – các phiên Claude đang chạy sẽ dừng." : "")")
+        }
+        .alert("Chưa dọn hết", isPresented: Binding(get: { model.lastError != nil }, set: { if !$0 { model.lastError = nil } })) {
+            Button("OK") { model.lastError = nil }
+        } message: {
+            Text(model.lastError ?? "")
+        }
         .sheet(item: $model.lastResult) { entry in
             ResultSheet(entry: entry)
         }

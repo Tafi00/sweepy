@@ -20,6 +20,7 @@ struct OverviewView: View {
                     diskCard
                     reclaimCard
                 }
+                .fixedSize(horizontal: false, vertical: true)
                 categoryCard
                 if !topItems.isEmpty { topItemsCard }
                 scheduleCard
@@ -40,6 +41,7 @@ struct OverviewView: View {
                 .tint(model.disk.usedFraction > 0.9 ? .red : .accentColor)
             Text(String(format: "Đã dùng %.0f%%", model.disk.usedFraction * 100))
                 .font(.caption).foregroundStyle(.secondary)
+            Spacer(minLength: 0)
         }
     }
 
@@ -50,17 +52,28 @@ struct OverviewView: View {
                 ProgressView(value: model.progress)
                 Text("Đang quét…").foregroundStyle(.secondary)
             } else {
-                Text(Fmt.bytes(model.totalFound))
+                Text(Fmt.bytes(model.selectedTotal))
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundStyle(.tint)
-                Text("Đã chọn \(Fmt.bytes(model.selectedTotal)) · tự động \(Fmt.bytes(model.autoTotal))")
-                    .foregroundStyle(.secondary)
+                Text("dọn được ngay từ các mục đã chọn").foregroundStyle(.secondary)
                 if model.waitingTotal > 0 {
-                    Label("\(Fmt.bytes(model.waitingTotal)) chờ đóng \(model.waitingApps.joined(separator: ", "))",
-                          systemImage: "exclamationmark.triangle.fill")
-                        .font(.callout).foregroundStyle(.orange)
-                        .help("Các mục này chỉ được dọn khi app đã thoát hẳn (⌘Q).")
+                    let apps = model.blockingApps(Array(model.selected))
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Label("+ \(Fmt.bytes(model.waitingTotal)) bị khoá vì \(model.waitingApps.joined(separator: ", ")) đang mở",
+                              systemImage: "lock.fill")
+                            .font(.callout).foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 4)
+                        if !apps.isEmpty {
+                            Button("Thoát app & dọn") { model.quitRequest = Array(model.selected) }
+                                .controlSize(.small)
+                                .disabled(model.busy)
+                        }
+                    }
                 }
+                Text("Tìm thấy \(Fmt.bytes(model.totalFound)) · chưa chọn \(Fmt.bytes(model.unselectedTotal)) · tự động \(Fmt.bytes(model.autoTotal))")
+                    .font(.caption).foregroundStyle(.secondary)
+                Spacer(minLength: 0)
                 HStack {
                     Button {
                         model.requestClean(Array(model.selected))
@@ -155,7 +168,7 @@ struct Card<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) { content }
             .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.secondary.opacity(0.15)))
     }
