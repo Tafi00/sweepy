@@ -33,14 +33,19 @@ struct ContentView: View {
             }
         }
         .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                if model.busy {
-                    HStack(spacing: 6) {
+            if model.busy {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
-                        Text(model.status).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                        Text(model.status).font(.callout).foregroundStyle(.secondary)
+                            .lineLimit(1).truncationMode(.middle)
                     }
-                    .frame(maxWidth: 280)
+                    .padding(.horizontal, 12).padding(.vertical, 4)
+                    .frame(maxWidth: 320)
+                    .background(Color.secondary.opacity(0.1), in: Capsule())
                 }
+            }
+            ToolbarItemGroup(placement: .primaryAction) {
                 Button { model.scan() } label: { Label("Quét lại", systemImage: "arrow.clockwise") }
                     .disabled(model.busy)
                     .help("Quét lại toàn bộ (⌘R)")

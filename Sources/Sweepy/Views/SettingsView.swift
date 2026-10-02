@@ -23,7 +23,16 @@ struct SettingsView: View {
                 Picker("Tần suất", selection: $draft.frequency) {
                     ForEach(Frequency.allCases) { Text($0.title).tag($0) }
                 }
-                if draft.frequency != .off {
+                if draft.frequency == .hourly {
+                    Picker("Chạy", selection: $draft.intervalHours) {
+                        ForEach(Schedule.intervalChoices, id: \.self) { h in
+                            Text(h == 1 ? "Mỗi giờ" : "Mỗi \(h) giờ").tag(h)
+                        }
+                    }
+                    Text("Mẹo: với lịch dày, nên đặt \"Chỉ dọn khi dung lượng trống dưới X GB\" để app chỉ dọn lúc cần, và chỉ báo khi dọn được từ 50 MB.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if draft.frequency != .off && draft.frequency != .hourly {
                     DatePicker("Giờ chạy", selection: timeBinding, displayedComponents: .hourAndMinute)
                     if draft.frequency == .weekly {
                         Picker("Vào", selection: $draft.weekday) {

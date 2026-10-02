@@ -237,11 +237,12 @@ struct RuleOverride: Codable, Hashable {
 // MARK: - Config
 
 enum Frequency: String, Codable, CaseIterable, Identifiable {
-    case off, daily, weekly, monthly
+    case off, hourly, daily, weekly, monthly
     var id: String { rawValue }
     var title: String {
         switch self {
         case .off: return "Tắt"
+        case .hourly: return "Mỗi vài giờ"
         case .daily: return "Hằng ngày"
         case .weekly: return "Hằng tuần"
         case .monthly: return "Hằng tháng"
@@ -256,6 +257,10 @@ struct Schedule: Codable, Hashable {
     /// launchd weekday: 0 = Sunday … 6 = Saturday.
     var weekday: Int = 1
     var dayOfMonth: Int = 1
+    /// hourly: run every N hours.
+    var intervalHours: Int = 2
+
+    static let intervalChoices = [1, 2, 3, 4, 6, 8, 12]
 
     static let weekdayNames = ["Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"]
 
@@ -263,10 +268,23 @@ struct Schedule: Codable, Hashable {
         let time = String(format: "%02d:%02d", hour, minute)
         switch frequency {
         case .off: return "Chưa bật"
+        case .hourly: return intervalHours == 1 ? "Mỗi giờ" : "Mỗi \(intervalHours) giờ"
         case .daily: return "Mỗi ngày lúc \(time)"
         case .weekly: return "\(Schedule.weekdayNames[max(0, min(6, weekday))]) hằng tuần lúc \(time)"
         case .monthly: return "Ngày \(dayOfMonth) hằng tháng lúc \(time)"
         }
+    }
+}
+
+extension Schedule {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        frequency = try c.decodeIfPresent(Frequency.self, forKey: .frequency) ?? .off
+        hour = try c.decodeIfPresent(Int.self, forKey: .hour) ?? 12
+        minute = try c.decodeIfPresent(Int.self, forKey: .minute) ?? 30
+        weekday = try c.decodeIfPresent(Int.self, forKey: .weekday) ?? 1
+        dayOfMonth = try c.decodeIfPresent(Int.self, forKey: .dayOfMonth) ?? 1
+        intervalHours = try c.decodeIfPresent(Int.self, forKey: .intervalHours) ?? 2
     }
 }
 

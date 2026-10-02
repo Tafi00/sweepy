@@ -47,7 +47,8 @@ enum CLI {
             Store.log(line)
         }
         Store.log("Xong: giải phóng \(Fmt.bytes(entry.freed)), còn trống \(Fmt.bytes(entry.freeAfter))")
-        if config.notify && entry.freed > 0 {
+        // Frequent runs free a little each time; only speak up when it is worth it.
+        if config.notify && entry.freed >= 50_000_000 {
             Notifier.post(title: "Sweepy đã dọn \(Fmt.bytes(entry.freed))",
                           body: "Ổ đĩa còn trống \(Fmt.bytes(entry.freeAfter)).", wait: true)
         }

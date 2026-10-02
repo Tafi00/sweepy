@@ -91,16 +91,21 @@ enum Scheduler {
         case .monthly: interval["Day"] = schedule.dayOfMonth
         default: break
         }
-        return [
+        var plist: [String: Any] = [
             "Label": label,
             "ProgramArguments": [executablePath, "--auto"],
-            "StartCalendarInterval": interval,
             "StandardOutPath": Store.logURL.path,
             "StandardErrorPath": Store.logURL.path,
             "ProcessType": "Background",
             "LowPriorityIO": true,
             "Nice": 10,
         ]
+        if schedule.frequency == .hourly {
+            plist["StartInterval"] = max(1, schedule.intervalHours) * 3600
+        } else {
+            plist["StartCalendarInterval"] = interval
+        }
+        return plist
     }
 
     /// Installs, updates or removes the LaunchAgent. Returns an error message on failure.
