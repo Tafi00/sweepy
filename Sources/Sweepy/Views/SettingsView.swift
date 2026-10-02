@@ -154,6 +154,8 @@ struct SettingsView: View {
                 Button("Mở cài đặt Full Disk Access") { model.openFullDiskAccessSettings() }
             }
 
+            UpdateSection(updater: model.updater)
+
             Section("Dữ liệu") {
                 LabeledContent("Cấu hình & lịch sử", value: PathUtil.abbreviate(Store.directory.path))
                 LabeledContent("Log tự động", value: PathUtil.abbreviate(Store.logURL.path))
@@ -252,6 +254,7 @@ struct MenuBarView: View {
                 openWindow(id: "main")
                 NSApp.activate(ignoringOtherApps: true)
             } label: { Label("Mở Sweepy", systemImage: "macwindow") }
+            UpdateReadyButton(updater: model.updater)
             Divider()
             Button("Thoát Sweepy") { NSApp.terminate(nil) }
         }

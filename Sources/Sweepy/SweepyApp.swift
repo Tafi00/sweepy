@@ -22,7 +22,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
         // Opened at login: stay quietly in the menu bar.
         let atLogin = LoginItem.launchedAtLogin
-        if atLogin && Store.loadConfig().hideWindowAtLogin && LoginItem.isEnabled {
+        let afterUpdate = CommandLine.arguments.contains("--updated-in-background")
+        if afterUpdate || (atLogin && Store.loadConfig().hideWindowAtLogin && LoginItem.isEnabled) {
             DispatchQueue.main.async {
                 for window in NSApp.windows where !(window is NSPanel) { window.close() }
             }

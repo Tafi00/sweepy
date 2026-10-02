@@ -24,6 +24,10 @@ kéo vào Applications. Nếu bản phát hành chưa được notarize, lần �
 xattr -dr com.apple.quarantine /Applications/Sweepy.app
 ```
 
+**Tự cập nhật:** từ bản 1.2.0, Sweepy kiểm tra Releases mỗi 6 giờ và chỉ cài bản được ký bằng cùng chứng chỉ
+Developer ID (team `3JD7L6FN23`). Khi app chỉ nằm trên menu bar, bản mới được cài ngay; khi cửa sổ đang mở,
+nút *Cập nhật* hiện trên thanh công cụ. Tắt ở *Cài đặt → Cập nhật*.
+
 ### Ký & notarize (cho người duy trì repo)
 
 Workflow tự ký Developer ID và notarize khi repo có các secret sau, nhờ đó bản zip tải bằng trình duyệt mở được ngay.
@@ -48,6 +52,9 @@ Phát hành bản mới: `git tag v1.x.y && git push --tags` → GitHub Actions 
 ./build.sh --install  # build rồi copy vào /Applications
 UNIVERSAL=1 ./build.sh  # bản chạy cả Apple Silicon và Intel
 ```
+
+`build.sh` tự ký bằng chứng chỉ Developer ID/Apple Development trong Keychain (hoặc `SIGN_IDENTITY=…`) để macOS
+nhớ quyền đã cấp (Full Disk Access…) qua các lần build; không có chứng chỉ thì ký ad-hoc.
 
 Cần Xcode Command Line Tools (Swift 5.9+). Nên chạy từ `/Applications` trước khi bật lịch tự động,
 vì LaunchAgent lưu đường dẫn tuyệt đối tới app.

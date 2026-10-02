@@ -297,6 +297,8 @@ struct AppConfig: Codable {
     var notify: Bool = true
     /// When macOS opens Sweepy at login, stay in the menu bar instead of showing the window.
     var hideWindowAtLogin: Bool = true
+    /// Check GitHub for new versions and install them.
+    var autoUpdate: Bool = true
     var overrides: [String: RuleOverride] = [:]
     var customRules: [Rule] = []
 
@@ -345,6 +347,7 @@ extension AppConfig {
         minFreeGB = try c.decodeIfPresent(Int.self, forKey: .minFreeGB) ?? 0
         notify = try c.decodeIfPresent(Bool.self, forKey: .notify) ?? true
         hideWindowAtLogin = try c.decodeIfPresent(Bool.self, forKey: .hideWindowAtLogin) ?? true
+        autoUpdate = try c.decodeIfPresent(Bool.self, forKey: .autoUpdate) ?? true
         overrides = try c.decodeIfPresent([String: RuleOverride].self, forKey: .overrides) ?? [:]
         customRules = try c.decodeIfPresent([Rule].self, forKey: .customRules) ?? []
     }

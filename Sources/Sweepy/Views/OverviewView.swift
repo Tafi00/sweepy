@@ -55,6 +55,12 @@ struct OverviewView: View {
                     .foregroundStyle(.tint)
                 Text("Đã chọn \(Fmt.bytes(model.selectedTotal)) · tự động \(Fmt.bytes(model.autoTotal))")
                     .foregroundStyle(.secondary)
+                if model.waitingTotal > 0 {
+                    Label("\(Fmt.bytes(model.waitingTotal)) chờ đóng \(model.waitingApps.joined(separator: ", "))",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.callout).foregroundStyle(.orange)
+                        .help("Các mục này chỉ được dọn khi app đã thoát hẳn (⌘Q).")
+                }
                 HStack {
                     Button {
                         model.requestClean(Array(model.selected))
@@ -108,7 +114,11 @@ struct OverviewView: View {
                         Text(entry.rule.name).font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    if entry.rule.autoClean { Tag(text: "tự động", symbol: "clock") }
+                    if let blocked = model.scans[entry.rule.id]?.blockedBy {
+                        Tag(text: "\(blocked) đang chạy", symbol: "exclamationmark.triangle", color: .orange)
+                    } else if entry.rule.autoClean {
+                        Tag(text: "tự động", symbol: "clock")
+                    }
                     Text(Fmt.bytes(entry.item.size)).monospacedDigit().frame(width: 80, alignment: .trailing)
                 }
                 .contextMenu {

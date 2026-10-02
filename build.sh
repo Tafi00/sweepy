@@ -27,7 +27,23 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Sweepy" "$APP/Contents/MacOS/Sweepy"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
-codesign --force --sign - "$APP"
+# macOS remembers granted permissions (Full Disk Access, Desktop/Documents…) per signing identity.
+# Ad-hoc signatures change with every build, so permissions would be asked again; prefer a real certificate.
+# Override with SIGN_IDENTITY="…" (or SIGN_IDENTITY=- for ad-hoc).
+IDENTITY=${SIGN_IDENTITY:-}
+if [ -z "$IDENTITY" ]; then
+  for kind in "Developer ID Application" "Apple Development"; do
+    IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "\"$kind" | head -1 | awk -F'"' '{print $2}')
+    [ -n "$IDENTITY" ] && break
+  done
+fi
+if [ -n "$IDENTITY" ] && [ "$IDENTITY" != "-" ]; then
+  codesign --force --options runtime --sign "$IDENTITY" "$APP"
+  echo "Đã ký bằng: $IDENTITY"
+else
+  codesign --force --sign - "$APP"
+  echo "⚠︎ Ký ad-hoc – macOS sẽ hỏi lại quyền sau mỗi lần build."
+fi
 echo "Đã build $APP"
 
 if [ "${1:-}" = "--install" ]; then

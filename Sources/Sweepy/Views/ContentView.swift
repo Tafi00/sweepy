@@ -40,10 +40,12 @@ struct ContentView: View {
                         Text(model.status).font(.callout).foregroundStyle(.secondary)
                             .lineLimit(1).truncationMode(.middle)
                     }
-                    .padding(.horizontal, 12).padding(.vertical, 4)
+                    .padding(.horizontal, 8)
                     .frame(maxWidth: 320)
-                    .background(Color.secondary.opacity(0.1), in: Capsule())
                 }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                UpdateReadyButton(updater: model.updater)
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 Button { model.scan() } label: { Label("Quét lại", systemImage: "arrow.clockwise") }
@@ -111,6 +113,7 @@ struct SafetyBadge: View {
 struct Tag: View {
     let text: String
     var symbol: String?
+    var color: Color = .secondary
     var body: some View {
         HStack(spacing: 3) {
             if let symbol { Image(systemName: symbol) }
@@ -118,8 +121,8 @@ struct Tag: View {
         }
         .font(.caption2.weight(.medium))
         .padding(.horizontal, 6).padding(.vertical, 2)
-        .background(Color.secondary.opacity(0.12), in: Capsule())
-        .foregroundStyle(.secondary)
+        .background(color.opacity(0.12), in: Capsule())
+        .foregroundStyle(color)
     }
 }
 
@@ -129,7 +132,7 @@ struct ConfirmCleanSheet: View {
     let ids: [String]
 
     var rules: [Rule] { model.rules.filter { ids.contains($0.id) } }
-    var total: Int64 { model.uniqueItems(ids, respectUnticked: true).reduce(0) { $0 + $1.item.size } }
+    var total: Int64 { model.cleanableTotal(ids) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -143,7 +146,7 @@ struct ConfirmCleanSheet: View {
                             Text(rule.name)
                             SafetyBadge(safety: rule.safety)
                             if let blocked = model.scans[rule.id]?.blockedBy {
-                                Tag(text: "\(blocked) đang chạy – sẽ bỏ qua", symbol: "exclamationmark.triangle")
+                                Tag(text: "\(blocked) đang chạy – sẽ bỏ qua", symbol: "exclamationmark.triangle", color: .orange)
                             }
                             Spacer()
                             Text(rule.kind == .command ? "lệnh" : Fmt.bytes(model.size(of: rule.id)))

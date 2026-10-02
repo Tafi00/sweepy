@@ -33,6 +33,8 @@ final class AppModel: ObservableObject {
     @Published var launchAtLogin = LoginItem.isEnabled
     @Published var loginItemMessage: String?
 
+    let updater = Updater()
+
     static weak var shared: AppModel?
 
     init() {
@@ -40,6 +42,31 @@ final class AppModel: ObservableObject {
         history = Store.loadHistory()
         selected = Set(config.effectiveRules().filter(\.autoClean).map(\.id))
         AppModel.shared = self
+        updater.start(enabled: config.autoUpdate)
+        // Quitting Xcode/Chrome should unlock its rules without a full rescan.
+        let center = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
+            center.addObserver(forName: name, object: nil, queue: .main) { _ in
+                Task { @MainActor in AppModel.shared?.refreshBlocked() }
+            }
+        }
+        // Command-line tools (gradle daemons…) don't post workspace notifications; recheck when the window comes back.
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+            Task { @MainActor in AppModel.shared?.refreshBlocked() }
+        }
+    }
+
+    func refreshBlocked() {
+        let rules = self.rules.filter(\.onlyWhenAppClosed)
+        Task.detached(priority: .utility) {
+            let processes = ProcessSnapshot.capture(includeProjectInfo: false)
+            let blocked = rules.map { ($0.id, processes.runningName(among: $0.skipIfRunning)) }
+            await MainActor.run {
+                for (id, name) in blocked where self.scans[id] != nil && self.scans[id]?.blockedBy != name {
+                    self.scans[id]?.blockedBy = name
+                }
+            }
+        }
     }
 
     var busy: Bool { isScanning || isCleaning }
@@ -84,9 +111,23 @@ final class AppModel: ObservableObject {
         uniqueItems(ids, respectUnticked: respectUnticked).reduce(0) { $0 + $1.item.size }
     }
 
+    /// Rules whose app is open right now; cleaning skips them, so they must not count as cleanable.
+    func isBlocked(_ ruleID: String) -> Bool { scans[ruleID]?.blockedBy != nil }
+
+    /// What cleaning `ids` would actually free right now.
+    func cleanableTotal(_ ids: [String]) -> Int64 {
+        uniqueTotal(ids.filter { !isBlocked($0) }, respectUnticked: true)
+    }
+
     var totalFound: Int64 { uniqueTotal(rules.map(\.id)) }
-    var selectedTotal: Int64 { uniqueTotal(Array(selected), respectUnticked: true) }
-    var autoTotal: Int64 { uniqueTotal(rules.filter(\.autoClean).map(\.id)) }
+    var selectedTotal: Int64 { cleanableTotal(Array(selected)) }
+    var autoTotal: Int64 { uniqueTotal(rules.filter { $0.autoClean && !isBlocked($0.id) }.map(\.id)) }
+
+    /// Selected size held back by running apps, and which apps.
+    var waitingTotal: Int64 { uniqueTotal(selected.filter(isBlocked), respectUnticked: true) }
+    var waitingApps: [String] {
+        Set(selected.compactMap { id in size(of: id) > 0 ? scans[id]?.blockedBy : nil }).sorted()
+    }
 
     var lastAutoRun: HistoryEntry? { history.last { $0.trigger == .auto } }
 
