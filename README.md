@@ -16,9 +16,9 @@ curl -fsSL https://raw.githubusercontent.com/Tafi00/sweepy/main/install.sh | bas
 Script tải bản mới nhất từ [Releases](https://github.com/Tafi00/sweepy/releases), cài vào `/Applications` và mở app.
 File tải bằng `curl` không bị macOS gắn cờ quarantine nên Gatekeeper không hiện cảnh báo.
 
-**Tải file zip thủ công:** tải `Sweepy.zip` ở [Releases](https://github.com/Tafi00/sweepy/releases/latest), giải nén,
-kéo vào Applications. Nếu bản phát hành chưa được notarize, lần đầu macOS sẽ báo không mở được — chọn
-*System Settings → Privacy & Security → Open Anyway*, hoặc chạy:
+**Tải bộ cài:** tải [`Sweepy.dmg`](https://github.com/Tafi00/sweepy/releases/latest/download/Sweepy.dmg), mở ra và
+kéo Sweepy vào thư mục Applications. Bản phát hành được ký Developer ID và notarize nên macOS mở bình thường.
+Nếu gặp bản cũ chưa notarize và macOS báo không mở được, chọn *System Settings → Privacy & Security → Open Anyway*, hoặc chạy:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Sweepy.app

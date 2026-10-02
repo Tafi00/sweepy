@@ -21,27 +21,40 @@ IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | grep "Develope
 codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
 codesign --verify --strict --verbose=2 "$APP"
 
-ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/notarize.zip"
 AUTH=(--apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD")
-SUBMISSION=$(xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" "${AUTH[@]}" --output-format json \
-  | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
-echo "Notary submission: $SUBMISSION"
 
-# Apple can take a long time (especially the first submissions of a new team) and the runner's
-# connection sometimes drops while polling, so keep waiting on the same submission instead of failing.
-STATUS=""
-for attempt in $(seq 1 12); do
-  xcrun notarytool wait "$SUBMISSION" "${AUTH[@]}" --timeout 20m || true
-  STATUS=$(xcrun notarytool info "$SUBMISSION" "${AUTH[@]}" --output-format json 2>/dev/null \
-    | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status",""))' || true)
-  echo "Lần $attempt: $STATUS"
-  [ "$STATUS" = "In Progress" ] || [ -z "$STATUS" ] || break
-  sleep 30
-done
-if [ "$STATUS" != "Accepted" ]; then
-  xcrun notarytool log "$SUBMISSION" "${AUTH[@]}" || true
-  echo "Notarize không thành công: ${STATUS:-không rõ}"
-  exit 1
-fi
+# Gửi một file cho Apple notarize và chờ kết quả.
+notarize() {
+  local file="$1"
+  local submission status=""
+  submission=$(xcrun notarytool submit "$file" "${AUTH[@]}" --output-format json \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+  echo "Notary submission ($(basename "$file")): $submission"
+  # Apple can take a long time (especially the first submissions of a new team) and the runner's
+  # connection sometimes drops while polling, so keep waiting on the same submission instead of failing.
+  for attempt in $(seq 1 12); do
+    xcrun notarytool wait "$submission" "${AUTH[@]}" --timeout 20m || true
+    status=$(xcrun notarytool info "$submission" "${AUTH[@]}" --output-format json 2>/dev/null \
+      | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status",""))' || true)
+    echo "Lần $attempt: $status"
+    [ "$status" = "In Progress" ] || [ -z "$status" ] || break
+    sleep 30
+  done
+  if [ "$status" != "Accepted" ]; then
+    xcrun notarytool log "$submission" "${AUTH[@]}" || true
+    echo "Notarize không thành công: ${status:-không rõ}"
+    exit 1
+  fi
+}
+
+# 1. App
+ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/notarize.zip"
+notarize "$RUNNER_TEMP/notarize.zip"
 xcrun stapler staple "$APP"
 spctl --assess --type execute --verbose "$APP"
+
+# 2. Bộ cài .dmg (chứa app đã staple), ký + notarize + staple riêng
+./scripts/make-dmg.sh "$IDENTITY"
+notarize dist/Sweepy.dmg
+xcrun stapler staple dist/Sweepy.dmg
+spctl --assess --type open --context context:primary-signature --verbose dist/Sweepy.dmg

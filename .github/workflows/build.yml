@@ -36,12 +36,17 @@ jobs:
         run: ./scripts/sign-and-notarize.sh
 
       - name: Package
-        run: ditto -c -k --keepParent dist/Sweepy.app dist/Sweepy.zip
+        run: |
+          ditto -c -k --keepParent dist/Sweepy.app dist/Sweepy.zip
+          # Unsigned builds still get an installer image.
+          [ -f dist/Sweepy.dmg ] || ./scripts/make-dmg.sh
 
       - uses: actions/upload-artifact@v4
         with:
           name: Sweepy
-          path: dist/Sweepy.zip
+          path: |
+            dist/Sweepy.dmg
+            dist/Sweepy.zip
 
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -49,5 +54,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            && gh release upload "$GITHUB_REF_NAME" dist/Sweepy.zip --clobber \
-            || gh release create "$GITHUB_REF_NAME" dist/Sweepy.zip --title "Sweepy $GITHUB_REF_NAME" --generate-notes
+            && gh release upload "$GITHUB_REF_NAME" dist/Sweepy.dmg dist/Sweepy.zip --clobber \
+            || gh release create "$GITHUB_REF_NAME" dist/Sweepy.dmg dist/Sweepy.zip --title "Sweepy $GITHUB_REF_NAME" --generate-notes
