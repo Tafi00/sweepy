@@ -1,13 +1,35 @@
-# Resident App — Schema Sync & E2E Starter
+# Anvil Harness
 
-Minimal workspace for preventing API schema drift between the backend, Web Admin Portal, and native iOS (`Codable` / Notification Service Extension) builds.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Isolation: Docker + gVisor](https://img.shields.io/badge/isolation-Docker%20%2B%20gVisor-2496ED.svg)](https://gvisor.dev/)
+[![Benchmark: SWE-bench Compatible](https://img.shields.io/badge/benchmark-SWE--bench-green.svg)](#evaluation)
 
-## Scope
-- `openapi/schema.yaml`: Single source of truth for verified rental listing payloads.
-- `ios/ListingModels.swift`: Resilient Swift `Codable` models handling timestamp & optional metadata edge cases.
-- `e2e/listing-approval.spec.ts`: Playwright E2E tests for the admin approval flow.
+**Anvil** is a lightweight, deterministic coding agent harness designed for reproducible evaluation and real-world software engineering tasks. Inspired by the minimalist, single-threaded philosophy of Claude Code, Anvil prioritizes strict container isolation, sharp atomic tools, and zero-trust benchmark grading over bloated multi-agent orchestration.
 
-## Run E2E Tests
-```bash
-npm install
-npx playwright test
+---
+
+## Architecture Overview
+
+```text
+┌────────────────────────────────────────────────────────────────────┐
+│                       Anvil Orchestrator                           │
+│  ┌───────────────────────┐        ┌─────────────────────────────┐  │
+│  │  Single-Threaded Loop │◄──────►│  Context Manager            │  │
+│  │  (LLM <-> Tool Calls) │        │  (Truncation + Compaction)  │  │
+│  └───────────┬───────────┘        └─────────────────────────────┘  │
+│              │ Pre-exec Guardrails (AST / Bash Filter + Timeout)   │
+└──────────────┼─────────────────────────────────────────────────────┘
+               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│              Ephemeral Sandbox (Docker + gVisor / Firecracker)     │
+│  • Network: Disabled post-setup   • RootFS: Read-only (/tmp, repo) │
+│  • Storage: OverlayFS (CoW)       • Limits: Hard cgroups (CPU/RAM) │
+│  • Tools: bash | grep | glob | structured_diff_edit                │
+└──────────────┬─────────────────────────────────────────────────────┘
+               │ Extract Git Patch (.diff)
+               ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                Clean Evaluation Container (Zero-Trust)             │
+│  • Fresh image  • Apply patch  • Run test suite  • Deterministic   │
+└────────────────────────────────────────────────────────────────────┘
